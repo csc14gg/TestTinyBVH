@@ -5,11 +5,13 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <sstream>
 #include <vector>
 
 #include <glm/vec3.hpp>
+#include <glm/gtc/epsilon.hpp>
 #include <glm/gtx/string_cast.hpp>
 
 namespace TestBVH {
@@ -27,6 +29,10 @@ tinybvh::bvhvec4 toTinyBvhVec4(const glm::vec3& v3) {
   tinybvh::bvhvec4 v4{v3.x, v3.y, v3.z, w};
 
   return v4;
+}
+
+glm::vec3 toGlmVec3(const tinybvh::bvhvec3& v3) {
+  return {v3.x, v3.y, v3.z};
 }
 
 glm::vec3 parseVec3(const std::string& vector3String) {
@@ -145,6 +151,10 @@ void calculateAabbFromVertices(
   }
 }
 
+constexpr float getFloatEpsilon() {
+  return std::numeric_limits<float>::epsilon();
+}
+
 } // namespace
 } // namespace TestBVH
 
@@ -155,7 +165,7 @@ int main() {
   std::cout << "File: " << meshTrianglesFileFullPath << std::endl;
   const MeshData meshData = loadMeshData(meshTrianglesFileFullPath);
 
-  if (isValidMesh(meshData)) {
+  if (!isValidMesh(meshData)) {
     std::cerr << "ERROR: invalid mesh data." << std::endl;
     return -100;
   }
@@ -165,7 +175,16 @@ int main() {
 
   tinybvh::BVH bvh;
   bvh.Build(meshData.vertices.data(), meshData.indices.data(), meshData.numTriangles());
-  //auto bvhAabbMin =
+  const glm::vec3 bvhAabbMin = toGlmVec3(bvh.aabbMin);
+  const glm::vec3 bvhAabbMax = toGlmVec3(bvh.aabbMax);
+
+  if (!glm::all(glm::epsilonEqual(aabbMin, bvhAabbMin, getFloatEpsilon()))) {
+    std::cerr << "AABB mins do not match: " << std::endl;
+  }
+
+  if (!glm::all(glm::epsilonEqual(aabbMax, bvhAabbMax, getFloatEpsilon()))) {
+    std::cerr << "AABB maxs do not match: " << std::endl;
+  }
 
   return 0;
 }
