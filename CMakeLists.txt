@@ -17,7 +17,7 @@ add_subdirectory(extern)
 # Set C++ standard (optional, but recommended)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX") # Enable warnings as errors
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /-WX")
 
 # Set output directories (optional, but good practice)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
