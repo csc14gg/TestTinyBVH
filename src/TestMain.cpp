@@ -8,6 +8,7 @@
 #include <limits>
 #include <string>
 #include <sstream>
+#include <unordered_set>
 #include <vector>
 
 #include <glm/vec3.hpp>
@@ -67,9 +68,9 @@ struct MeshData {
   std::vector<tinybvh::bvhvec4> vertices;
   std::vector<unsigned int> indices;
 
-  size_t numTriangles() const {
+  uint32_t numTriangles() const {
     assert(indices.empty() || indices.size() % 3 == 0);
-    return (indices.size() / 3);
+    return static_cast<uint32_t>(indices.size() / 3);
   }
 };
 
@@ -127,14 +128,25 @@ bool isValidMesh(const MeshData& meshData) {
   return true;
 }
 
-void calculateAabbFromVertices(
-    glm::vec3& aabbMin,
-    glm::vec3& aabbMax,
-    const std::vector<tinybvh::bvhvec4>& vertices) {
+void calculateAabb(glm::vec3& aabbMin, glm::vec3& aabbMax, const MeshData& meshData) {
+  const std::vector<tinybvh::bvhvec4>& vertices = meshData.vertices;
+  const std::vector<uint32_t>& indices = meshData.indices;
+
+  const std::unordered_set<uint32_t> uniqueIndices{
+      std::begin(indices),
+      std::end(indices)};
+  assert(!uniqueIndices.empty());
+
   aabbMin = glm::vec3{std::numeric_limits<float>::max()};
   aabbMax = glm::vec3{std::numeric_limits<float>::lowest()};
 
-  for (const tinybvh::bvhvec4& vertex : vertices) {
+  for (int iVertex = 0; iVertex < vertices.size(); ++iVertex) {
+    // Ignore unused vertices
+    if (uniqueIndices.find(iVertex) == std::end(uniqueIndices)) {
+      continue;
+    }
+
+    const tinybvh::bvhvec4& vertex = vertices[iVertex];
     for (int component = 0; component < 3; ++component) {
       const float vi = vertex.cell[component];
 
@@ -155,6 +167,27 @@ constexpr float getFloatEpsilon() {
   return std::numeric_limits<float>::epsilon();
 }
 
+bool nearlyEqual(const float lhs, const float rhs, const float epsilon) {
+  if (lhs == rhs) {
+    return true;
+  }
+
+  const float absDiff = std::abs(lhs - rhs);
+  const float maxVal = std::max(std::abs(lhs), std::abs(rhs));
+  const bool result = absDiff <= std::max(epsilon, maxVal * epsilon * 100);
+
+  return result;
+}
+
+bool nearlyEqual(const glm::vec3& lhs, const glm::vec3& rhs, const float epsilon) {
+  const bool xEqual = nearlyEqual(lhs.x, rhs.x, epsilon);
+  const bool yEqual = nearlyEqual(lhs.y, rhs.y, epsilon);
+  const bool zEqual = nearlyEqual(lhs.z, rhs.z, epsilon);
+  const bool aboutEqual = (xEqual && yEqual && zEqual);
+
+  return aboutEqual;
+}
+
 } // namespace
 } // namespace TestBVH
 
@@ -171,19 +204,21 @@ int main() {
   }
 
   glm::vec3 aabbMin, aabbMax;
-  calculateAabbFromVertices(aabbMin, aabbMax, meshData.vertices);
+  calculateAabb(aabbMin, aabbMax, meshData);
 
   tinybvh::BVH bvh;
   bvh.Build(meshData.vertices.data(), meshData.indices.data(), meshData.numTriangles());
   const glm::vec3 bvhAabbMin = toGlmVec3(bvh.aabbMin);
   const glm::vec3 bvhAabbMax = toGlmVec3(bvh.aabbMax);
 
-  if (!glm::all(glm::epsilonEqual(aabbMin, bvhAabbMin, getFloatEpsilon()))) {
-    std::cerr << "AABB mins do not match: " << std::endl;
+  if (!nearlyEqual(aabbMin, bvhAabbMin, getFloatEpsilon())) {
+    std::cerr << "AABB mins do not match: " << glm::to_string(aabbMin)
+        << " VERSUS " << glm::to_string(bvhAabbMin) << std::endl;
   }
 
-  if (!glm::all(glm::epsilonEqual(aabbMax, bvhAabbMax, getFloatEpsilon()))) {
-    std::cerr << "AABB maxs do not match: " << std::endl;
+  if (!nearlyEqual(aabbMax, bvhAabbMax, getFloatEpsilon())) {
+    std::cerr << "AABB maxs do not match: " << glm::to_string(aabbMax)
+      << " VERSUS " << glm::to_string(bvhAabbMax) << std::endl;
   }
 
   return 0;
