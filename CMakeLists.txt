@@ -28,7 +28,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 file(GLOB_RECURSE SOURCES "src/*.cpp" "include/*.h" "include/*.hpp")
 
 # Create executable
-add_executable(TestTinyBvh ${SOURCES})
+add_executable(TestTinyBvh ${SOURCES} "src/TinyBvh.cpp")
 
 # Install target (optional)
 install(TARGETS TestTinyBvh
