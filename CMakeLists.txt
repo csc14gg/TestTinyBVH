@@ -2,6 +2,14 @@ cmake_minimum_required(VERSION 3.20)
 
 project(TestTinyBvhProject VERSION 1.0.0 LANGUAGES CXX)
 
+include(FetchContent)
+FetchContent_Declare(
+  glm
+  GIT_REPOSITORY https://github.com/g-truc/glm.git
+  GIT_TAG        0.9.9.8 # Or a specific tag/commit
+)
+FetchContent_MakeAvailable(glm)
+
 # Set C++ standard (optional, but recommended)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -27,6 +35,12 @@ install(TARGETS TestTinyBvh
 # Install headers (optional)
 install(DIRECTORY include/ DESTINATION include)
 
+# Get the source directory path and expose to C++.
+get_filename_component(PROJECT_SOURCE_DIR_ABS "${CMAKE_SOURCE_DIR}" ABSOLUTE)
+add_compile_definitions(
+    PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR_ABS}"
+    GLM_FORCE_EXPLICIT_CTOR)
+
 # Optional: Add compiler definitions.
 # target_compile_definitions(TestTinyBvh PRIVATE MY_DEFINITION)
 
@@ -34,7 +48,7 @@ install(DIRECTORY include/ DESTINATION include)
 # target_include_directories(TestTinyBvh PRIVATE include)
 
 # Optional: Link against external libraries.
-# target_link_libraries(TestTinyBvh PRIVATE my_external_library)
+target_link_libraries(TestTinyBvh PRIVATE glm::glm)
 
 # Optional: Enable CTest integration.
 # enable_testing()
