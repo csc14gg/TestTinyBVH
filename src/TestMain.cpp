@@ -129,6 +129,10 @@ bool isValidMesh(const MeshData& meshData) {
 }
 
 void calculateAabb(glm::vec3& aabbMin, glm::vec3& aabbMax, const MeshData& meshData) {
+  if (meshData.numTriangles() == 0) {
+    throw std::invalid_argument("Error: no triangles in `meshData`.");
+  }
+
   const std::vector<tinybvh::bvhvec4>& vertices = meshData.vertices;
   const std::vector<uint32_t>& indices = meshData.indices;
 
@@ -163,30 +167,14 @@ void calculateAabb(glm::vec3& aabbMin, glm::vec3& aabbMax, const MeshData& meshD
   }
 }
 
-constexpr float getFloatEpsilon() {
-  return std::numeric_limits<float>::epsilon();
-}
-
-bool nearlyEqual(const float lhs, const float rhs, const float epsilon) {
-  if (lhs == rhs) {
-    return true;
-  }
-
-  const float absDiff = std::abs(lhs - rhs);
-  const float maxVal = std::max(std::abs(lhs), std::abs(rhs));
-  const bool result = absDiff <= std::max(epsilon, maxVal * epsilon * 100);
-
-  return result;
-}
-
 bool nearlyEqual(const glm::vec3& lhs, const glm::vec3& rhs, const float epsilon) {
-  const bool xEqual = nearlyEqual(lhs.x, rhs.x, epsilon);
-  const bool yEqual = nearlyEqual(lhs.y, rhs.y, epsilon);
-  const bool zEqual = nearlyEqual(lhs.z, rhs.z, epsilon);
-  const bool aboutEqual = (xEqual && yEqual && zEqual);
+  const glm::bvec3 equalTestResult = glm::epsilonEqual(lhs, rhs, epsilon);
+  const bool allNearlyEqual = glm::all(equalTestResult);
 
-  return aboutEqual;
+  return allNearlyEqual;
 }
+
+constexpr float FLOAT_EPSILON = std::numeric_limits<float>::epsilon();
 
 } // namespace
 } // namespace TestBVH
@@ -211,12 +199,12 @@ int main() {
   const glm::vec3 bvhAabbMin = toGlmVec3(bvh.aabbMin);
   const glm::vec3 bvhAabbMax = toGlmVec3(bvh.aabbMax);
 
-  if (!nearlyEqual(aabbMin, bvhAabbMin, getFloatEpsilon())) {
+  if (!nearlyEqual(aabbMin, bvhAabbMin, FLOAT_EPSILON)) {
     std::cerr << "AABB mins do not match: " << glm::to_string(aabbMin)
         << " VERSUS " << glm::to_string(bvhAabbMin) << std::endl;
   }
 
-  if (!nearlyEqual(aabbMax, bvhAabbMax, getFloatEpsilon())) {
+  if (!nearlyEqual(aabbMax, bvhAabbMax, FLOAT_EPSILON)) {
     std::cerr << "AABB maxs do not match: " << glm::to_string(aabbMax)
       << " VERSUS " << glm::to_string(bvhAabbMax) << std::endl;
   }
