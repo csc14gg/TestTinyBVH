@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(TestTinyBvhProject VERSION 1.0.0 LANGUAGES CXX)
 
+# For GLM
 include(FetchContent)
 FetchContent_Declare(
   glm
@@ -9,6 +10,9 @@ FetchContent_Declare(
   GIT_TAG        0.9.9.8 # Or a specific tag/commit
 )
 FetchContent_MakeAvailable(glm)
+
+# For external dependencies
+add_subdirectory(extern)
 
 # Set C++ standard (optional, but recommended)
 set(CMAKE_CXX_STANDARD 17)
@@ -48,7 +52,7 @@ add_compile_definitions(
 # target_include_directories(TestTinyBvh PRIVATE include)
 
 # Optional: Link against external libraries.
-target_link_libraries(TestTinyBvh PRIVATE glm::glm)
+target_link_libraries(TestTinyBvh PRIVATE libtinybvh glm::glm)
 
 # Optional: Enable CTest integration.
 # enable_testing()

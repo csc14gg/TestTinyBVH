@@ -1,3 +1,5 @@
+#include <tinybvh/tiny_bvh.h>
+
 #include <filesystem>
 #include <iostream>
 
